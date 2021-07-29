@@ -26,7 +26,7 @@ router.post('/register', (req, res, next) => {
 
                 newUser.save()
                     .then(user => {
-                        console.log('Successss',user)
+                        console.log('Successss', user)
                         res.status(200).json({
                             success: true,
                             msg: "User registered"
@@ -97,14 +97,61 @@ router.post('/register', (req, res, next) => {
 //         // });
 
 
-//Authenticate
+//Authenticate(Login)
 router.post('/authenticate', (req, res, next) => {
-    res.send('AUTHENTICATE');
+    console.log("Inside the authenticate route");
+    // res.send('AUTHENTICATE');
+
+    const username = req.body.username;
+    console.log(username);
+    const password = req.body.password;
+    console.log(password);
+
+    User.getUserByUsername(req.body.username, (err, user) => {
+        if (err) throw err;
+        if (!user) console.log("No such user exists, incorrect username!");
+        if (user) {
+            console.log({
+                user: user
+            });
+
+            User.camparePassword(req.body.password, user.password, (err, isMatch) => {
+                if (err) throw err;
+                if (user && !isMatch) {
+                    console.log("Password is not matching");
+                    res.json({
+                        msg: "Incorrect password, try again!"
+                    });
+                }
+                if (isMatch) {
+                    console.log('Authentication successful', user.password);
+                    const token = jwt.sign({ id: user.id }, 'mySecretKey', { expiresIn: '10h' });
+                    // console.log(token);
+                    res.json({token: token});
+                };
+            })
+        }
+
+
+    })
 });
 
 //Profile
-router.get('/profile', (req, res, next) => {
-    res.send('PROFILE');
+router.post('/profile', User.extractToken, (req, res, next) => {
+    // res.send('PROFILE');
+    jwt.verify(req.token, 'mySecretKey', (err, authData) => {
+        console.log('Extracted token', req.token);
+        if(err) {
+            console.log('Forbidden', authData, err);
+            res.sendStatus(403);
+        } //forbidden
+        else if(typeof authData !== 'undefined') { 
+            console.log('This ur profile', authData);
+            res.json({
+                message: "This is ur profile...."
+            })
+        }
+    });
 });
 
 module.exports = router;

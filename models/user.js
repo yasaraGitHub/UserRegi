@@ -32,6 +32,35 @@ module.exports.getUserByUsername = function (username, callback) {
     User.findOne(query, callback);
 }
 
+module.exports.getUserByEmail = function (email, callback) {
+    const query = { email: email }
+    User.findOne(query, callback);
+}
+
+module.exports.camparePassword = function (reqPassword, hash, callback) {
+    bcrypt.compare(reqPassword, hash, (err, result) => {
+        if (err) throw err;
+        callback(null, result);
+    });
+}
+
+//Middlewaer function to extract token from http request's header's authorization property
+//Middlewear function contains 3 parts, req, res, next
+module.exports.extractToken = function (req, res, next) {
+    const bearerHeader = req.headers['authorization'];
+
+    if(typeof bearerHeader !== 'undefined'){
+        const bearer = bearerHeader.split(' ');
+        const bearerToken = bearer[1];
+        req.token = bearerToken;
+        next();
+    }
+
+    else{
+        res.sendStatus(403);
+    }
+}
+
 // module.exports.addUser = function (newUser, callback) {
 //     bcrypt.genSalt(10, (err, salt)=>{
 //         bcrypt.hash(newUser.password, salt, (err,hash)=>{
